@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+<meta name="date" content="2023-11-23" />
+
+<title>Behaviour</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+
+
+
+<style type="text/css">
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+}
+.hanging div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}
+</style>
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Behaviour</h1>
+<h4 class="date">2023-11-23</h4>
+
+
+
+<p>The <code>temporalBehaviour()</code> and the
+<code>spatialBehaviour()</code> functions allow computing wind speed and
+direction along the lifespan of a tropical cyclone. The
+<code>temporalBehaviour()</code> function focuses on the temporal
+variation at a specific location while the
+<code>spatialBehaviour()</code> function focuses on the spatial
+variation over a given area. Both functions also allow to compute
+summary statistics about the behaviour of the wind generated by
+cyclones. Three summary statistics are available: maximum sustained wind
+speed, power dissipation index, and the duration of exposure to winds
+reaching defined speed thresholds.</p>
+<div id="maximum-sustained-wind-speed" class="section level3">
+<h3>Maximum sustained wind speed</h3>
+<p>The maximum sustained wind speed (MSW, in <span class="math inline">\(m.s^{-1}\)</span>) over the lifespan of a storm is
+computed as follows:</p>
+<p><span class="math display">\[
+\max(v(t) | t \in [0,T])
+\]</span></p>
+<p>where <span class="math inline">\(t\)</span> is the time of the
+observation<br /> <span class="math inline">\(T\)</span> is the lifespan
+of the storm<br /></p>
+</div>
+<div id="power-dissipation-index" class="section level3">
+<h3>Power Dissipation Index</h3>
+<p>The power dissipation index (PDI, in <span class="math inline">\(J.m^{2}\)</span>) or total power dissipated by a
+tropical storm over its lifespan <span class="citation">(Emanuel 1999,
+2005)</span> is computed as follows:</p>
+<p><span class="math display">\[
+\int_T \rho \times C_d \times v_r^3 \ dt
+\]</span></p>
+<p>where <span class="math inline">\(t\)</span> is the time of the
+observation<br /> <span class="math inline">\(T\)</span> is the lifespan
+of the storm<br /> <span class="math inline">\(\rho\)</span> is the air
+density fixed to <span class="math inline">\(1\)</span> <span class="math inline">\(kg.m^{-3}\)</span> as in <span class="citation">Emanuel (1999)</span> <br /> <span class="math inline">\(C_d\)</span> is the drag coefficient of the storm
+fixed to <span class="math inline">\(2\)</span> X <span class="math inline">\(10^{-3}\)</span> as in <span class="citation">Emanuel (1999)</span> <br /></p>
+</div>
+<div id="duration-of-exposure" class="section level3">
+<h3>Duration of exposure</h3>
+<p>The duration of exposure (in <span class="math inline">\(hours\)</span>) to winds reaching defined speed
+thresholds is computed as follows:</p>
+<p><span class="math display">\[
+\int_T c(v_t) dt
+\]</span></p>
+<p><span class="math display">\[
+\left\{
+\begin{aligned}
+c(v_t) &amp;= 1 \quad if \quad v_t \geq Thd\\
+c(v_t) &amp;= 0 \quad if \quad v_t &lt; Thd\\
+\end{aligned}
+\right.
+\]</span></p>
+<p>where<br /> <span class="math inline">\(t\)</span> is the time of the
+observation<br /> <span class="math inline">\(T\)</span> is the lifespan
+of the storm<br /> <span class="math inline">\(v_t\)</span> is the
+maximum sustained wind speed at time <span class="math inline">\(t\)</span> (in <span class="math inline">\(m.s^{-1}\)</span>)<br /> <span class="math inline">\(Thd\)</span> is the minimum wind sped threshold
+(in <span class="math inline">\(m.s^{-1}\)</span>)<br /></p>
+<p>By default the duration of exposure is computed for each
+Saffir-Simpson Hurricane Scale threshold values for tropical cyclone
+categories (i.e., <span class="math inline">\(33\)</span>, <span class="math inline">\(43\)</span>, <span class="math inline">\(50\)</span> ,<span class="math inline">\(58\)</span>, and <span class="math inline">\(70\)</span> <span class="math inline">\(m.s^{-1}\)</span>, <span class="citation">(Simpson
+1974)</span>) but can be defined using the <code>wind_threshold</code>
+argument.</p>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2 class="unnumbered">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-emanuel_power_1999" class="csl-entry">
+Emanuel, Kerry A. 1999. <span>“The Power of a Hurricane: <span>An</span>
+Example of Reckless Driving on the Information Superhighway.”</span>
+<em>Weather</em> 54 (4): 107–8. <a href="https://doi.org/10.1002/j.1477-8696.1999.tb06435.x">https://doi.org/10.1002/j.1477-8696.1999.tb06435.x</a>.
+</div>
+<div id="ref-emanuel_increasing_2005" class="csl-entry">
+———. 2005. <span>“Increasing Destructiveness of Tropical Cyclones over
+the Past 30 Years.”</span> <em>Nature</em> 436 (7051): 686–88. <a href="https://doi.org/10.1038/nature03906">https://doi.org/10.1038/nature03906</a>.
+</div>
+<div id="ref-simpson_hurricane_2010" class="csl-entry">
+Simpson, R. H. 1974. <span>“The <span>Hurricane</span>
+<span>Disaster</span>—<span>Potential</span> <span>Scale</span>.”</span>
+<em>Weatherwise</em>, July. <a href="https://doi.org/10.1080/00431672.1974.9931702">https://doi.org/10.1080/00431672.1974.9931702</a>.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
