@@ -54,7 +54,7 @@ hour but can be changed using the `tempRes` argument. Here we set the temporal
 resolution to 30 min with `tempRes=0.5` as follows:
 
 ``` {r}
-TS <- temporalBehaviour(st, points = df, product = "TS", tempRes = 0.5, verbose = 0)
+TS <- temporalBehaviour(st, points = df, product = "TS", tempRes = 30, verbose = 0)
 ```
 
 With the above specification the `temporalBehaviour()` function returns a list
@@ -66,7 +66,7 @@ the observation ("isoTimes").
 str(TS)
 ```
 
-We use the data frame to draw time series plots for wind speed and wind
+We use the data frame and the `plotTemporal()` function to draw time series plots for wind speed and wind
 direction as follows:
 
 ``` {r , include = FALSE}
@@ -74,13 +74,7 @@ oldpar <- par(mar = c(10, 4, 4, 2))
 ```
 
 ``` {r}
-plot(TS$PAM$Port_Vila$speed, type = "l", ylim = c(0, 60), xlab = "", ylab = "Wind speed (m/s)", axes = FALSE, col = "blue")
-points(TS$PAM$Port_Vila$speed, col = "blue", pch = 3)
-lines(TS$PAM$Luganville$speed, col = "red")
-points(TS$PAM$Luganville$speed, col = "red", pch = 3)
-legend("topleft", pch = 3, col = c("blue", "red"), legend = c("Port Vila", "Luganville"), bty = "n")
-axis(1, at = seq(1, length(TS$PAM$Port_Vila$speed)), labels = TS$PAM$Port_Vila$isoTimes, las = 2)
-axis(2, at = seq(0, 60, 10), labels = seq(0, 60, 10), las = 2)
+plotTemporal(data=TS, storm="PAM")
 ```
 
 ``` {r , include = FALSE}
@@ -88,13 +82,7 @@ dev.off()
 ```
 
 ``` {r}
-plot(TS$PAM$Port_Vila$direction, type = "l", ylim = c(0, 360), xlab = "", ylab = "Wind direction (degree north)", axes = FALSE, col = "blue")
-points(TS$PAM$Port_Vila$direction, col = "blue", pch = 3)
-lines(TS$PAM$Luganville$direction, col = "red")
-points(TS$PAM$Luganville$direction, col = "red", pch = 3)
-legend("topleft", pch = 3, col = c("blue", "red"), legend = c("Port Vila", "Luganville"), bty = "n")
-axis(1, at = seq(1, length(TS$PAM$Port_Vila$speed)), labels = TS$PAM$Port_Vila$isoTimes, las = 2)
-axis(2, at = seq(0, 360, 90), labels = seq(0, 360, 90), las = 2)
+plotTemporal(data=TS, storm="PAM", var='direction')
 ```
 
 ``` {r , include = FALSE}
@@ -116,7 +104,7 @@ The power dissipation index is computed using the `product = "PDI"` argument as
 follows:
 
 ``` {r}
-PDI <- temporalBehaviour(st, points = df, product = "PDI", tempRes = 0.5, verbose = 0)
+PDI <- temporalBehaviour(st, points = df, product = "PDI", tempRes = 30, verbose = 0)
 PDI
 ```
 
@@ -126,7 +114,7 @@ The duration of exposure is computed using the `product = "Exposure"` argument
 as follows:
 
 ``` {r}
-exposure_SS <- temporalBehaviour(st, points = df, product = "Exposure", tempRes = 0.5, verbose = 0)
+exposure_SS <- temporalBehaviour(st, points = df, product = "Exposure", tempRes = 30, verbose = 0)
 exposure_SS
 ```
 
@@ -139,7 +127,7 @@ follow:
 
 ``` {r}
 wt <- c(17.2, 24.4, 32.5, 44.2, 55.0)
-exposure_BOM <- temporalBehaviour(st, points = df, product = "Exposure", tempRes = 0.5, windThreshold = wt, verbose = 0)
+exposure_BOM <- temporalBehaviour(st, points = df, product = "Exposure", tempRes = 30, windThreshold = wt, verbose = 0)
 exposure_BOM
 ```
 

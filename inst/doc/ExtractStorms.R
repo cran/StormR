@@ -47,8 +47,42 @@ terra::plot(LOI, add = TRUE)
 terra::plot(countriesHigh, add = TRUE)
 
 ## ----chunk11------------------------------------------------------------------
-getSSHS(st)
+getScale(st)
 
 ## ----chunk12------------------------------------------------------------------
-plotStorms(st, category = c(4, 5), labels = FALSE, legends = "topright")
+plotStorms(st, category = c(5, 6), labels = FALSE, legends = "topright")
+
+## ----chunk 12-----------------------------------------------------------------
+# Tokyo's tropical cyclone intensity scale
+RSMCScale <- c(16.94, 24.44, 32.5, 43.33, 53.61)
+
+sts_jpn <- defStormsList(sds = sds,
+                         loi = "Vanuatu",
+                         names = "PAM",
+                         scale = RSMCScale,
+                         verbose = 0)
+
+plotStorms(sts_jpn)
+
+## ----chunk 13-----------------------------------------------------------------
+RSMCPalette <- c("#6ec1ea", "#4dffff", "#c0ffc0", "#ffd98c", "#ff738a", "#a188fc")
+names(RSMCPalette) <- c("Tropical depression",
+                        "Tropical storm",
+                        "Severe tropical storm",
+                        "Typhoon",
+                        "Very strong typhoon",
+                        "Violent typhoon")
+
+sts_jpn <- defStormsList(sds = sds,
+                         loi = "Vanuatu",
+                         names = "PAM",
+                         scale = RSMCScale,
+                         scalePalette = RSMCPalette,
+                         verbose = 0)
+
+plotStorms(sts_jpn)
+
+## ----chunk13------------------------------------------------------------------
+# Example of dynamic plot, using the same parameters above
+plotStorms(st, category = c(4, 5), labels = FALSE, legends = "topright", dynamicPlot=TRUE)
 

@@ -31,8 +31,11 @@ plotBehaviour(st, ss$PAM_PDI)
 plotBehaviour(st, ss$PAM_Exposure_58)
 
 ## -----------------------------------------------------------------------------
-ss <- spatialBehaviour(st, product = c("MSW"), verbose = 0, spaceRes = "10min", tempRes = 0.5)
+ss <- spatialBehaviour(st, product = c("MSW"), verbose = 0, spaceRes = "10min", tempRes = 30)
 plotBehaviour(st, ss$PAM_MSW)
+
+## -----------------------------------------------------------------------------
+plotBehaviour(st, ss$PAM_MSW, dynamicPlot = TRUE)
 
 ## -----------------------------------------------------------------------------
 writeRast(ss$PAM_MSW)

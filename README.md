@@ -1,9 +1,13 @@
 
-
 # StormR R package <img src="man/figures/logo.png" align="right" alt="" width="120" />
 
 <!-- badges: start -->
+[![](https://www.r-pkg.org/badges/version/StormR?color=green)](https://cran.r-project.org/package=StormR)
+[![](https://cranlogs.r-pkg.org/badges/grand-total/StormR)](https://cran.r-project.org/package=StormR)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.05766/status.svg)](https://doi.org/10.21105/joss.05766)
 [![codecov](https://codecov.io/github/umr-amap/StormR/branch/master/graph/badge.svg?token=5YMVL4TFB5)](https://app.codecov.io/github/umr-amap/StormR)
+![R-CMD-check](https://github.com/umr-amap/StormR/actions/workflows/check-standard.yaml/badge.svg)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10213689.svg)](https://doi.org/10.5281/zenodo.10213689)
 [![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/umr-amap/StormR/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/umr-amap/StormR)
 <!-- badges: end -->
 
@@ -15,7 +19,14 @@
 
 ### Installing StormR
 
-The development version can be installed from GitHub as follows,
+`StormR` is now [available on CRAN](https://cran.r-project.org/package=StormR) on version `0.1.1`.
+You can install it as follows:
+
+``` r
+install.packages("StormR")
+```
+
+The latest development version can be installed from GitHub as follows,
 
 ``` r
 #install.packages("devtools")
@@ -33,21 +44,25 @@ library(StormR)
 | **Name** | **Description** | **Inputs** | **Outputs** |
 |:--:|:----:|:-----------:|:-----:|
 |`defStormsDataset()`|Creates a `stormsDataset` object|".nc" (NetCDF) file|`stormsDataset` object|
-|`defStormsList()`|Extracts storms|`stormsDataset` object|`StormsList` object|
-|`plotStorms()`|Plots storms track data|`StormsList` object||
-|`temporalBehaviour()`|Computes wind speed, direction time series, and summary statistics for a given set of point coordinates |`StormsList` object|lists of data.frame objects|
-|`spatialBehaviour()`|Computes 2D wind fields and summary statistics over a given location of interest |`StormsList` object|`SpatRaster` object|
-|`plotBehaviour()`|Plots 2D wind fields and summary statistics|`StormsList` + `SpatRaster` objects||
+|`defStormsList()`|Extracts storms|`stormsDataset` object|`stormsList` object|
+|`plotStorms()`|Plots storms track data|`stormsList` object||
+|`temporalBehaviour()`|Computes wind speed, direction time series, and summary statistics for a given set of point coordinates |`stormsList` object|lists of data.frame objects|
+|`spatialBehaviour()`|Computes 2D wind fields and summary statistics over a given location of interest |`stormsList` object|`SpatRaster` object|
+|`plotBehaviour()`|Plots 2D wind fields and summary statistics|`stormsList` + `SpatRaster` objects||
 |`writeRast()`|Exports wind fields and summary statistics to file|`SpatRaster` object|`.tiff` or `.nc` file|
 
 ## Contributing
+
 You are welcome to contribute to the `StormR` package. Just fork the project and create a pull request with your changes and we will review it as soon as possible.
 
 ## Reporting issues
+
 Issues can be reported [here](https://github.com/umr-amap/StormR/issues/new/choose). Simply choose the appropriate template and fill in the requested information.
 
 ## Seeking help
+
 If you need help with the `StormR` package, please open a new discussion on the [Q&A section on github](https://github.com/umr-amap/StormR/discussions/categories/q-a). We will do our best to answer your questions. Other users are also welcome to help you.
 
 ## Funding
-This work was supported by Hermon Slade Foundation, [grant HSF 19105](http://www.hermonslade.org.au/hsf-19105/).
+
+This work was supported by Hermon Slade Foundation, [grant HSF 19105](http://www.hermonslade.org.au/hsf19105/).

@@ -3,9 +3,9 @@
 
 
 
-########
-# MODELS#
-########
+##########
+# MODELS #
+##########
 
 
 
@@ -161,7 +161,7 @@ boose <- function(r, rmw, msw, pc, poci, x, y, vx, vy, vh, landIntersect, lat) {
 #' @param spaceRes character
 #' @param tempRes numeric
 #' @param verbose numeric
-#' @return NULL, just stops the function if inputs are not valid
+#' @return NULL
 checkInputsSpatialBehaviour <- function(sts, product, windThreshold, method, asymmetry,
                                         empiricalRMW, spaceRes, tempRes, verbose) {
   # Checking sts input
@@ -202,7 +202,7 @@ checkInputsSpatialBehaviour <- function(sts, product, windThreshold, method, asy
   # Checking tempRes input
   stopifnot("tempRes must be numeric" = identical(class(tempRes), "numeric"))
   stopifnot("tempRes must be length 1" = length(tempRes) == 1)
-  stopifnot("invalid tempRes: must be either 1, 0.75, 0.5 or 0.25" = tempRes %in% c(1, 0.75, 0.5, 0.25))
+  stopifnot("invalid tempRes: must be either 60, 30 or 15" = tempRes %in% c(60, 30, 15))
 
   # Checking verbose input
   stopifnot("verbose must be numeric" = identical(class(verbose), "numeric"))
@@ -268,7 +268,7 @@ makeTemplateRaster <- function(buffer, res) {
 #' @param index numeric. Index of interpolated observation in data to use to
 #'   generate raster
 #'
-#' @return a SpatRaster
+#' @return SpatRaster
 makeTemplateModel <- function(rasterTemplate, buffer, data, index) {
   template <- terra::rast(
     xmin = data$lon[index] - buffer,
@@ -335,8 +335,7 @@ getIndices <- function(st, offset, product) {
 #' @noRd
 #' @param st Storm object
 #' @param indices numeric vector extracted from getIndices
-#' @param dt numeric. time step
-#' @param timeDiff numeric. Time diff in database
+#' @param tempRes numeric. time step for interpolated data, in minutes
 #' @param empiricalRMW logical. Whether to use rmw from the data or to compute
 #'   them according to getRmw function
 #' @param method character. method input from spatialBehaviour
@@ -353,45 +352,85 @@ getIndices <- function(st, offset, product) {
 #'    \item vxDeg: numeric. Velocity of the speed in the x direction (deg/h)
 #'    \item vyDeg: numeric Velocity of the speed in the y direction (deg/h)
 #'  }
-getDataInterpolate <- function(st, indices, dt, timeDiff, empiricalRMW, method) {
+getDataInterpolate <- function(st, indices, tempRes, empiricalRMW, method) {
+  # Nb of observations of storm and time associated
   lenIndices <- length(indices)
-  lenData <- dt * (lenIndices - 1) - (lenIndices - 2)
-  indicesObs <- seq(1, lenData, dt - 1)
+  timeObs <- st@obs.all$iso.time[indices]
+  # If data has irregular temporal resolution, we have to find the gcd of the time series
+  timeStepData <- as.numeric(difftime(timeObs[2:lenIndices],
+                                      timeObs[1:lenIndices - 1],
+                                      units = "mins"))
+  gcd2 <- function(a, b) {
+    if (b == 0) a else Recall(b, a %% b)
+  }
+  gcd <- function(...) Reduce(gcd2, c(...))
+  timeStepDataGCD <- gcd(timeStepData)
+  # Determine temporal interpolation time step
+  interpolatedRes <- min(timeStepDataGCD, tempRes)
 
+  # Get the total time of the storm (in mins)
+  timeInit <- timeObs[1]
+  timeEnd <- timeObs[lenIndices]
+  timeDiffObs <- as.numeric(difftime(timeEnd,
+                                     timeInit,
+                                     units = "mins"))
+
+  # Deal with length and time of interpolated data
+  lenInterpolated <- as.integer(timeDiffObs / interpolatedRes) + 1
+  timeInterpolated <- format(seq.POSIXt(as.POSIXct(timeInit),
+                                        as.POSIXct(timeEnd),
+                                        by = paste0(interpolatedRes, " min")),
+                             "%Y-%m-%d %H:%M:%S")
+  indicesObsInterpolated <- match(timeObs, timeInterpolated)
+  if (interpolatedRes == tempRes) {
+    # Case where interpolation is done at the frequency requested by the user
+    timeData <- timeInterpolated
+    indicesFinal <- seq(1, lenInterpolated)
+  } else {
+    # Case where interpolation time is smaller than requested by user
+    # (if the dataset has really short observation intervals,
+    # usualy when irregular observations).
+    timeData <- format(seq.POSIXt(as.POSIXct(timeInit),
+                                  as.POSIXct(timeEnd),
+                                  by = paste0(tempRes, " min")),
+                       "%Y-%m-%d %H:%M:%S")
+    indicesFinal <- match(timeData, timeInterpolated)
+  }
+
+  # Initiate the final data.frame
   data <- data.frame(
-    lon = rep(NA, lenData),
-    lat = rep(NA, lenData),
-    stormSpeed = rep(NA, lenData),
-    vxDeg = rep(NA, lenData),
-    vyDeg = rep(NA, lenData),
-    msw = rep(NA, lenData),
-    rmw = rep(NA, lenData),
-    indices = rep(NA, lenData),
-    isoTimes = rep(NA, lenData)
+    lon = rep(NA, lenInterpolated),
+    lat = rep(NA, lenInterpolated),
+    stormSpeed = rep(NA, lenInterpolated),
+    vxDeg = rep(NA, lenInterpolated),
+    vyDeg = rep(NA, lenInterpolated),
+    msw = rep(NA, lenInterpolated),
+    rmw = rep(NA, lenInterpolated),
+    indices = rep(NA, lenInterpolated),
+    isoTimes = rep(NA, lenInterpolated)
   )
 
   # Filling indices and isoTimes
   ind <- c()
-  isoT <- c()
-  timeRes <- 1 / ((dt - 1) / timeDiff) * 60
-
-  for (i in indices[1:lenIndices - 1]) {
-    lab <- as.character(i)
-    t <- st@obs.all$iso.time[i]
-    for (j in 1:(dt - 2)) {
-      lab <- c(lab, paste0(as.character(i), ".", as.character(j)))
-      t <- c(t, as.character(as.POSIXct(st@obs.all$iso.time[i]) + j * 60 * timeRes))
-    }
-    ind <- c(ind, lab)
-    isoT <- c(isoT, t)
+  for (i in seq(1, lenInterpolated)) {
+    timeIntervals <- as.numeric(difftime(timeObs,
+                                         timeInterpolated[i],
+                                         units = "mins"))
+    # Case of interpolation time equal to observation time
+    indObs <- which(timeIntervals > 0)[1]
+    ind <- c(ind,
+      formatC(indices[[1]] - 1 + indObs - timeIntervals[indObs] / (timeIntervals[indObs] - timeIntervals[indObs - 1]),
+              digits = 2,
+              format = "f")
+    )
   }
-  ind <- c(ind, as.character(indices[lenIndices]))
-  isoT <- c(isoT, st@obs.all$iso.time[indices[lenIndices]])
+  # When interpolation time matches observation time, we keep "integer" indices
+  ind <- gsub(".00", "", ind)
 
   data$indices <- ind
-  data$isoTimes <- isoT
+  data$isoTimes <- timeInterpolated
 
-
+  # Get lon & lat
   lon <- st@obs.all$lon[indices]
   lat <- st@obs.all$lat[indices]
 
@@ -412,62 +451,52 @@ getDataInterpolate <- function(st, indices, dt, timeDiff, empiricalRMW, method) 
     vyDeg[i] <- (lat[i + 1] - lat[i]) / 3
   }
 
-
-  data$msw[indicesObs] <- st@obs.all$msw[indices]
-
+  # Prepare all fields
+  data$msw[indicesObsInterpolated] <- st@obs.all$msw[indices]
+  data$lon[indicesObsInterpolated] <- lon
+  data$lat[indicesObsInterpolated] <- lat
+  data$stormSpeed[indicesObsInterpolated] <- stormSpeed
+  data$vxDeg[indicesObsInterpolated] <- vxDeg
+  data$vyDeg[indicesObsInterpolated] <- vyDeg
 
   if (empiricalRMW) {
-    data$rmw[indicesObs] <- getRmw(data$msw[indicesObs], lat)
+    data$rmw[indicesObsInterpolated] <- getRmw(data$msw[indicesObsInterpolated], lat)
   } else {
-    if (!("rmw" %in% colnames(st@obs.all))) {
+    if (!("rmw" %in% colnames(st@obs.all)) || (all(is.na(st@obs.all$rmw[indices])))) {
       warning("Missing rmw data to perform model. empiricalRMW set to TRUE")
-      data$rmw[indicesObs] <- getRmw(data$msw[indicesObs], lat)
-    } else if (all(is.na(st@obs.all$rmw[indices]))) {
-      warning("Missing rmw data to perform model. empiricalRMW set to TRUE")
-      data$rmw[indicesObs] <- getRmw(data$msw[indicesObs], lat)
+      data$rmw[indicesObsInterpolated] <- getRmw(data$msw[indicesObsInterpolated], lat)
     } else {
-      data$rmw[indicesObs] <- st@obs.all$rmw[indices]
+      ##interpolatedRMW[indicesObsInterpolated] <- st@obs.all$rmw[indices]
+      data$rmw[indicesObsInterpolated] <- st@obs.all$rmw[indices]
     }
   }
-
-  data$lon[indicesObs] <- lon
-  data$lat[indicesObs] <- lat
-  data$stormSpeed[indicesObs] <- stormSpeed
-  data$vxDeg[indicesObs] <- vxDeg
-  data$vyDeg[indicesObs] <- vyDeg
 
   # Interpolate data
   data$lon <- zoo::na.approx(data$lon)
   data$lat <- zoo::na.approx(data$lat)
   data$msw <- zoo::na.approx(data$msw, rule = 2)
   data$rmw <- zoo::na.approx(data$rmw, rule = 2)
-
-  for (i in 1:(dt - 2)) {
-    ind <- indicesObs + i
-    ind <- ind[seq_along(ind) - 1]
-    data$stormSpeed[ind] <- stormSpeed[seq_along(ind)]
-    data$vxDeg[ind] <- vxDeg[seq_along(ind)]
-    data$vyDeg[ind] <- vyDeg[seq_along(ind)]
-  }
-
+  # For velocities, we use na.locf instead of linear interpolation
+  data$stormSpeed <- zoo::na.locf(data$stormSpeed)
+  data$vxDeg <- zoo::na.locf(data$vxDeg)
+  data$vyDeg <- zoo::na.locf(data$vyDeg)
 
   if (method == "Holland" || method == "Boose") {
     if (all(is.na(st@obs.all$poci[indices])) || all(is.na(st@obs.all$pres[indices]))) {
       stop("Missing pressure data to perform Holland model")
     }
 
-    data$poci <- rep(NA, lenData)
-    data$pc <- rep(NA, lenData)
-    data$poci[indicesObs] <- st@obs.all$poci[indices]
-    data$pc[indicesObs] <- st@obs.all$pres[indices]
+    data$poci <- rep(NA, lenInterpolated)
+    data$pc <- rep(NA, lenInterpolated)
+    data$poci[indicesObsInterpolated] <- st@obs.all$poci[indices]
+    data$pc[indicesObsInterpolated] <- st@obs.all$pres[indices]
 
     # Interpolate data
     data$poci <- zoo::na.approx(data$poci)
     data$pc <- zoo::na.approx(data$pc)
   }
 
-
-  return(data)
+  return(data[indicesFinal, ])
 }
 
 
@@ -477,9 +506,6 @@ getDataInterpolate <- function(st, indices, dt, timeDiff, empiricalRMW, method) 
 ##############################################
 # Helpers to handle Models/Asymmetry/Direction#
 ##############################################
-
-
-
 
 
 #' Compute wind profile according to the selected method and asymmetry
@@ -564,7 +590,7 @@ computeWindProfile <- function(data, index, method, asymmetry, x, y, crds, distE
   # Adding asymmetry
   if (asymmetry != "None") {
     output <- computeAsymmetry(
-      asymmetry, wind, direction, x, y,
+      asymmetry, wind, x, y,
       data$vxDeg[index], data$vyDeg[index],
       data$stormSpeed[index],
       distEye * 0.001, data$rmw[index], data$lat[index]
@@ -605,7 +631,7 @@ computeWindProfile <- function(data, index, method, asymmetry, x, y, crds, distE
 #'
 #' @return numeric vectors. Wind speed values (m/s) and wind direction (rad) at
 #'   each (x,y) position
-computeAsymmetry <- function(asymmetry, wind, direction, x, y, vx, vy, vh, r, rmw, lat) {
+computeAsymmetry <- function(asymmetry, wind, x, y, vx, vy, vh, r, rmw, lat) {
   # Circular symmetrical wind
   dir <- -(atan2(y, x) - pi / 2)
 
@@ -1012,8 +1038,8 @@ maskProduct <- function(finalStack, loi, template) {
 #'     \item `"Exposure"`, for duration of exposure.
 #'   }
 #' @param windThreshold numeric vector. Minimal wind threshold(s) (in \eqn{m.s^{-1}}) used to
-#'   compute the duration of exposure when `product="Exposure"`. By default the thresholds
-#'   used in the Saffir-Simpson hurricane wind scale are used (i.e., 18, 33, 42, 49, 58, 70 \eqn{m.s^{-1}}).
+#'   compute the duration of exposure when `product="Exposure"`. Default value is to set NULL, in this
+#'   case, the windthresholds are the one used in the scale defined in the stromsList.
 #' @param method character. Model used to compute wind speed and direction.
 #' Three different models are implemented:
 #'   \itemize{
@@ -1035,8 +1061,8 @@ maskProduct <- function(finalStack, loi, template) {
 #' @param spaceRes character. Spatial resolution. Can be `"30 sec"` (~1 km at the equator),
 #' `"2.5 min"` (~4.5 km at the equator), `"5 min"` (~9 km at the equator) or `"10 min"` (~18.6 km at the equator).
 #'  Default setting is `"2.5 min"`.
-#' @param tempRes numeric. Temporal resolution. Can be `1` (for 60 min, default setting),
-#'  `0.75` (for 45min), `0.5` (for 30 min), and `0.25` (15 for min).
+#' @param tempRes numeric. Temporal resolution (min). Can be `60` ( default setting),
+#'   `30` or `15`.
 #' @param verbose numeric. Whether or not the function should display
 #'   informations about the process and/or outputs. Can be:
 #' \itemize{
@@ -1068,7 +1094,7 @@ maskProduct <- function(finalStack, loi, template) {
 #'   al., 2010), usually provide observation at a 3- or 6-hours temporal
 #'   resolution. In the spatialBehaviour() function, linear interpolations are
 #'   used to reach the temporal resolution specified in the `tempRes` argument
-#'   (default value = 1 hour). When `product = "MSW"`, `product = "PDI"`,
+#'   (default value = 60 min). When `product = "MSW"`, `product = "PDI"`,
 #'   or `product = "Exposure"` the `focal()` function from the `terra` R package
 #'   is used to smooth the results using moving windows.
 #'
@@ -1218,23 +1244,27 @@ maskProduct <- function(finalStack, loi, template) {
 #' # using Boose model
 #' prof.pam <- spatialBehaviour(pam, product = "Profiles", method = "Boose")
 #' }
+#'
 #' @export
 spatialBehaviour <- function(sts,
                              product = "MSW",
-                             windThreshold = c(18, 33, 42, 49, 58, 70),
+                             windThreshold = NULL,
                              method = "Willoughby",
                              asymmetry = "Chen",
                              empiricalRMW = FALSE,
                              spaceRes = "2.5min",
-                             tempRes = 1,
+                             tempRes = 60,
                              verbose = 2) {
   startTime <- Sys.time()
+
+  if (is.null(windThreshold)) {
+    windThreshold = sts@scale
+  }
 
   checkInputsSpatialBehaviour(
     sts, product, windThreshold, method, asymmetry,
     empiricalRMW, spaceRes, tempRes, verbose
   )
-
 
   if (verbose > 0) {
     cat("=== spatialBehaviour processing ... ===\n\n")
@@ -1266,12 +1296,7 @@ spatialBehaviour <- function(sts,
     s <- 1 # Initializing count of storms
     cat(" Done\n\n")
     cat("Computation settings:\n")
-    cat("  (*) Temporal resolution: Every", switch(as.numeric(tempRes),
-      "1" = 60,
-      "0.75" = 45,
-      "0.5" = 30,
-      "0.25" = 15
-    ), "min\n")
+    cat("  (*) Temporal resolution: Every", tempRes, " minutes\n")
     cat("  (*) Space resolution:", names(resolutions[spaceRes]), "\n")
     cat("  (*) Method used:", method, "\n")
     cat("  (*) Product(s) to compute:", product, "\n")
@@ -1288,15 +1313,8 @@ spatialBehaviour <- function(sts,
     # Handling indices inside loi.buffer or not
     ind <- getIndices(st, 2, product)
 
-
-    it1 <- st@obs.all$iso.time[1]
-    it2 <- st@obs.all$iso.time[2]
-    timeDiff <- as.numeric(as.POSIXct(it2) - as.POSIXct(it1))
-    # Interpolated time step dt, default value dt <- 4 --> 1h
-    dt <- 1 + (1 / tempRes * timeDiff) # + 1 for the limit values
-
     # Getting data associated with storm st
-    dataTC <- getDataInterpolate(st, ind, dt, timeDiff, empiricalRMW, method)
+    dataTC <- getDataInterpolate(st, ind, tempRes, empiricalRMW, method)
 
     nbStep <- dim(dataTC)[1] - 1
 

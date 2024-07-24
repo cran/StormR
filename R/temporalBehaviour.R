@@ -9,7 +9,6 @@
 #' @param windThreshold numeric
 #' @param method character
 #' @param asymmetry character
-#' @param empiricalRMW logical
 #' @param tempRes numeric
 #' @param verbose logical
 #' @return NULL
@@ -25,7 +24,7 @@ checkInputsTemporalBehaviour <- function(sts, points, product, windThreshold, me
     "colnames of points must be \"x\" (Eastern degree), \"y\" (Northern degree)" = colnames(points) == c("x", "y")
   )
   stopifnot("Invalid points coordinates" = points$x > -180 & points$x <= 360 &
-    points$y >= -90 & points$y <= 90)
+              points$y >= -90 & points$y <= 90)
 
   # Checking product input
   stopifnot("Invalid product" = product %in% c("TS", "PDI", "Exposure"))
@@ -51,7 +50,7 @@ checkInputsTemporalBehaviour <- function(sts, points, product, windThreshold, me
   # Checking tempRes input
   stopifnot("tempRes must be numeric" = identical(class(tempRes), "numeric"))
   stopifnot("tempRes must be length 1" = length(tempRes) == 1)
-  stopifnot("invalid tempRes: must be either 1, 0.75, 0.5 or 0.25" = tempRes %in% c(1, 0.75, 0.5, 0.25))
+  stopifnot("invalid tempRes: must be either 60, 30 or 15" = tempRes %in% c(60, 30, 15))
 
   # Checking verbose input
   stopifnot("verbose must be numeric" = identical(class(verbose), "numeric"))
@@ -165,7 +164,7 @@ computeProduct <- function(product, wind, direction, tempRes, result, threshold)
 finalizeResult <- function(finalResult, result, product, points, isoT, indices, st, threshold) {
   if (product == "TS") {
     l <- list()
-    for (i in 1:dim(points)[1]) {
+    for (i in seq_len(dim(points)[1])) {
       j <- 2 * (i - 1) + 1
 
       df <- data.frame(result[, j], result[, j:j + 1], indices = indices, isoTimes = isoT)
@@ -218,8 +217,8 @@ finalizeResult <- function(finalResult, result, product, points, isoT, indices, 
 #'     \item `"Exposure"`, for the duration of exposure to defined wind thresholds.
 #'   }
 #' @param windThreshold numeric vector. Minimal wind threshold(s) (in \eqn{m.s^{-1}}) used to
-#'   compute the duration of exposure when `product="Exposure"`. By default the thresholds
-#'   used in the Saffir-Simpson hurricane wind scale are used (i.e., 18, 33, 42, 49, 58, 70 \eqn{m.s^{-1}}).
+#'   compute the duration of exposure when `product="Exposure"`. Default value is to set NULL, in this
+#'   case, the windthresholds are the one used in the scale defined in the stromsList.
 #' @param method character. Model used to compute wind speed and direction.
 #' Three different models are implemented:
 #'   \itemize{
@@ -238,8 +237,8 @@ finalizeResult <- function(finalResult, result, product, points, isoT, indices, 
 #' the radius of maximum wind (`rmw`) empirically using the model developed by
 #' Willoughby et al. (2006). If `empiricalRMW==FALSE` (default setting) then the
 #' `rmw` provided in the `StormsList` is used.
-#' @param tempRes numeric. Temporal resolution. Can be `1` (for 60 min, default setting),
-#'  `0.75` (for 45min), `0.5` (for 30 min), and `0.25` (15 for min).
+#' @param tempRes numeric. Temporal resolution (min). Can be `60` (default setting),
+#'   `30` or `15`.
 #' @param verbose numeric. Information displayed. Can be:
 #' \itemize{
 #'    \item `2`, information about the processes and outputs are displayed (default setting),
@@ -265,7 +264,7 @@ finalizeResult <- function(finalResult, result, product, points, isoT, indices, 
 #'   al., 2010), usually provide observation at a 3- or 6-hours temporal
 #'   resolution. In the temporalBehaviour() function, linear interpolations are
 #'   used to reach the temporal resolution specified in the `tempRes` argument
-#'   (default value = 1 hour).
+#'   (default value = 60 min).
 #'
 #'   The Holland (1980) model, widely used in the literature, is based on the
 #'   'gradient wind balance in mature tropical cyclones. The wind speed distribution
@@ -393,8 +392,8 @@ finalizeResult <- function(finalResult, result, product, points, isoT, indices, 
 #' Monthly Weather Review, 134(4), 1102–1120. https://doi.org/10.1175/MWR3106.1
 #'
 #' @examples
-#' # Creating a stormsDataset
 #' \donttest{
+#' # Creating a stormsDataset
 #' sds <- defStormsDataset()
 #'
 #' # Geting storm track data for tropical cyclone Pam (2015) near Vanuatu
@@ -415,24 +414,28 @@ finalizeResult <- function(finalResult, result, product, points, isoT, indices, 
 #' # over points 1 and 2 defined above
 #' exp.pam <- temporalBehaviour(pam, points = pts, product = "Exposure")
 #' }
+#'
 #' @export
 temporalBehaviour <- function(sts,
                               points,
                               product = "TS",
-                              windThreshold = c(18, 33, 42, 49, 58, 70),
+                              windThreshold = NULL,
                               method = "Willoughby",
                               asymmetry = "Chen",
                               empiricalRMW = FALSE,
-                              tempRes = 1,
+                              tempRes = 60,
                               verbose = 1) {
-  checkInputsTemporalBehaviour(sts, points, product, windThreshold, method, asymmetry, empiricalRMW, tempRes, verbose)
 
+  if (is.null(windThreshold)) {
+    windThreshold <- sts@scale
+  }
+
+  checkInputsTemporalBehaviour(sts, points, product, windThreshold, method, asymmetry, empiricalRMW, tempRes, verbose)
 
   if (verbose > 0) {
     cat("=== temporalBehaviour processing ... ===\n\n")
     cat("Initializing data ...")
   }
-
 
   if (method == "Boose") {
     # Map for intersection
@@ -454,12 +457,7 @@ temporalBehaviour <- function(sts,
   if (verbose > 0) {
     cat(" Done\n\n")
     cat("Computation settings:\n")
-    cat("  (*) Temporal resolution: Every", switch(as.numeric(tempRes),
-      "1" = 60,
-      "0.75" = 45,
-      "0.5" = 30,
-      "0.25" = 15
-    ), "min\n")
+    cat("  (*) Temporal resolution: Every", tempRes, "min\n")
     cat("  (*) Method used:", method, "\n")
     cat("  (*) Product(s) to compute:", product, "\n")
     cat("  (*) Asymmetry used:", asymmetry, "\n")
@@ -467,7 +465,7 @@ temporalBehaviour <- function(sts,
       cat("  (*) rmw computed according to the empirical formula (See Details section)")
     }
     cat("  (*) Points: lon-lat\n")
-    for (i in 1:dim(points)[1]) {
+    for (i in seq_len(dim(points)[1])) {
       cat("      ", points$x[i], " ", points$y[i], "\n")
     }
     cat("\n")
@@ -481,14 +479,8 @@ temporalBehaviour <- function(sts,
     # Handling indices inside loi.buffer or not
     ind <- getIndices(st, 2, "none")
 
-    it1 <- st@obs.all$iso.time[1]
-    it2 <- st@obs.all$iso.time[2]
-    timeDiff <- as.numeric(as.POSIXct(it2) - as.POSIXct(it1))
-    # Interpolated time step dt, default value dt <- 4 --> 1h
-    dt <- 1 + (1 / tempRes * timeDiff) # + 1 for the limit values
-
     # Getting data associated with storm st
-    dataTC <- getDataInterpolate(st, ind, dt, timeDiff, empiricalRMW, method)
+    dataTC <- getDataInterpolate(st, ind, tempRes, empiricalRMW, method)
 
 
     # Computing distances from the eye of storm for every observations x, and
@@ -501,7 +493,7 @@ temporalBehaviour <- function(sts,
 
     res <- c()
     # For each point
-    for (i in 1:dim(points)[1]) {
+    for (i in seq_len(dim(points)[1])) {
       # Coordinates
       pt <- points[i, ]
 
