@@ -46,6 +46,11 @@ terra::plot(Buffer, lty = 3, main = paste(BufferSize, "km buffer arround New Cal
 terra::plot(LOI, add = TRUE)
 terra::plot(countriesHigh, add = TRUE)
 
+## ----duplicatedNames----------------------------------------------------------
+getNames(st)
+st_renamed <- renameStorms(st)
+getNames(st_renamed)
+
 ## ----chunk11------------------------------------------------------------------
 getScale(st)
 
